@@ -1,0 +1,58 @@
+# Nom du projet / stack (visible tel quel dans Docker Desktop)
+name: archi-micro-services-exo2
+
+services:
+  # ---- Base de donnees MongoDB (image officielle mongo:latest) ----
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - bookstore-net
+
+  # ---- Microservice back LoopBack 4 (image node:16-slim) ----
+  loopback-bookstore:
+    build: ./loopback-bookstore
+    image: archi-micro-services-exo2-back
+    container_name: loopback-bookstore
+    environment:
+      # Le back joint MongoDB par le NOM du container (reseau commun), pas par IP
+      MONGO_HOST: mongo
+      MONGO_PORT: "27017"
+      MONGO_DB: lbMicroBook
+      HOST: 0.0.0.0
+      PORT: "3000"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongo
+    networks:
+      - bookstore-net
+
+  # ---- Front Express bookstore-web-app (image node:16) ----
+  bookstore-web-app:
+    build: ./bookstore-web-app
+    image: archi-micro-services-exo2-front
+    container_name: bookstore-web-app
+    environment:
+      PORT: "8080"
+      # Le front joint le back par le NOM du container (reseau commun), pas par IP
+      BACKEND_URL: http://loopback-bookstore:3000
+    ports:
+      - "8080:8080"
+    depends_on:
+      - loopback-bookstore
+    networks:
+      - bookstore-net
+
+# Reseau commun : permet d'utiliser les noms de containers a la place des IPs
+networks:
+  bookstore-net:
+    driver: bridge
+
+# Volume persistant pour les donnees MongoDB
+volumes:
+  mongo-data:
