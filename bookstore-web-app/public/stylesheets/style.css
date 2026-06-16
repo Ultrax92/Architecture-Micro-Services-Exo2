@@ -5,4 +5,54 @@ body {
 
 a {
   color: #00B7FF;
+  margin-right: 10px;
+}
+
+table {
+  border-collapse: collapse;
+  margin-bottom: 30px;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+th {
+  background: #f4f4f4;
+}
+
+form.inline {
+  display: inline;
+}
+
+button {
+  cursor: pointer;
+}
+
+button.danger {
+  color: #fff;
+  background: #d9534f;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 3px;
+}
+
+.flash {
+  background: #dff0d8;
+  color: #3c763d;
+  border: 1px solid #3c763d;
+  padding: 10px 15px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+ul.detail {
+  list-style: none;
+  padding: 0;
+}
+
+ul.detail li {
+  margin-bottom: 6px;
 }

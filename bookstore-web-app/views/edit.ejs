@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+  </head>
+  <body>
+    <h1>Modifier le livre</h1>
+
+    <%# La soumission envoie un PATCH /books/{id} cote serveur %>
+    <form action="/edit/<%= book.id %>" method="post">
+      <p>
+        <label>Titre :
+          <input type="text" name="title" value="<%= book.title %>" required />
+        </label>
+      </p>
+      <p>
+        <label>Auteur :
+          <input type="text" name="author" value="<%= book.author %>" />
+        </label>
+      </p>
+      <button type="submit">Enregistrer</button>
+      <a href="/">Annuler</a>
+    </form>
+  </body>
+</html>

@@ -1,17 +1,47 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
   <head>
+    <meta charset="utf-8" />
     <title><%= title %></title>
     <link rel='stylesheet' href='/stylesheets/style.css' />
   </head>
   <body>
     <h1>Book Inventory</h1>
 
-    <ul>
-      <% books.forEach(function (book) { %>
-        <li><%= book.title %> &mdash; <%= book.author %></li>
-      <% }); %>
-    </ul>
+    <%# Message de confirmation (bonus) %>
+    <% if (msg) { %>
+      <p class="flash">
+        <% if (msg === 'created') { %>Livre ajoute avec succes.<% } %>
+        <% if (msg === 'updated') { %>Livre modifie avec succes.<% } %>
+        <% if (msg === 'deleted') { %>Livre supprime avec succes.<% } %>
+      </p>
+    <% } %>
+
+    <% if (books.length === 0) { %>
+      <p>Aucun livre pour le moment.</p>
+    <% } else { %>
+      <table>
+        <thead>
+          <tr><th>Titre</th><th>Auteur</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          <% books.forEach(function (book) { %>
+            <tr>
+              <td><%= book.title %></td>
+              <td><%= book.author %></td>
+              <td>
+                <a href="/book/<%= book.id %>">Voir</a>
+                <a href="/edit/<%= book.id %>">Modifier</a>
+                <form action="/delete/<%= book.id %>" method="post" class="inline"
+                      onsubmit="return confirm('Supprimer ce livre ?');">
+                  <button type="submit" class="danger">Supprimer</button>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
 
     <h2>Add Book:</h2>
     <form action="/add" method="post">

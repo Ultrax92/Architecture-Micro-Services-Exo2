@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+  </head>
+  <body>
+    <h1>Detail du livre</h1>
+
+    <ul class="detail">
+      <li><strong>Id :</strong> <%= book.id %></li>
+      <li><strong>Titre :</strong> <%= book.title %></li>
+      <li><strong>Auteur :</strong> <%= book.author %></li>
+    </ul>
+
+    <p>
+      <a href="/edit/<%= book.id %>">Modifier</a>
+      <a href="/">Retour a la liste</a>
+    </p>
+  </body>
+</html>
