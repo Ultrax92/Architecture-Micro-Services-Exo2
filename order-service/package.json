@@ -1,7 +1,7 @@
 {
-  "name": "loopback-bookstore",
+  "name": "order-service",
   "version": "0.0.1",
-  "description": "loopback-bookstore",
+  "description": "order-service - gestion des commandes",
   "keywords": [
     "loopback-application",
     "loopback"

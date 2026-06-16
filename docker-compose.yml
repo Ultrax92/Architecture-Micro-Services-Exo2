@@ -2,53 +2,150 @@
 name: archi-micro-services-exo2
 
 services:
-  # ---- Base de donnees MongoDB (image officielle mongo:latest) ----
+  # ---- Base de donnees MongoDB (instance unique partagee, 1 collection par service) ----
   mongo:
     image: mongo:latest
     container_name: mongo
     ports:
-      - "27017:27017"
+      - "${MONGO_PORT:-27017}:27017"
     volumes:
       - mongo-data:/data/db
     networks:
       - bookstore-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
-  # ---- Microservice back LoopBack 4 (image node:16-slim) ----
-  loopback-bookstore:
-    build: ./loopback-bookstore
-    image: archi-micro-services-exo2-back
-    container_name: loopback-bookstore
+  # ---- Inventory Service (livres) - LoopBack 4 / node:16-slim ----
+  inventory-service:
+    build: ./inventory-service
+    image: archi-micro-services-exo2-inventory
+    container_name: inventory-service
     environment:
-      # Le back joint MongoDB par le NOM du container (reseau commun), pas par IP
       MONGO_HOST: mongo
       MONGO_PORT: "27017"
-      MONGO_DB: lbMicroBook
+      MONGO_DB: ${MONGO_DB:-bookstore}
       HOST: 0.0.0.0
       PORT: "3000"
     ports:
-      - "3000:3000"
+      - "${INVENTORY_PORT:-3000}:3000"
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     networks:
       - bookstore-net
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/ping',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  # ---- Front Express bookstore-web-app (image node:16) ----
+  # ---- Order Service (commandes) - LoopBack 4 / node:16-slim ----
+  order-service:
+    build: ./order-service
+    image: archi-micro-services-exo2-order
+    container_name: order-service
+    environment:
+      MONGO_HOST: mongo
+      MONGO_PORT: "27017"
+      MONGO_DB: ${MONGO_DB:-bookstore}
+      HOST: 0.0.0.0
+      PORT: "3001"
+    ports:
+      - "${ORDER_PORT:-3001}:3001"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - bookstore-net
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/ping',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ---- Payment Service (paiements) - LoopBack 4 / node:16-slim ----
+  payment-service:
+    build: ./payment-service
+    image: archi-micro-services-exo2-payment
+    container_name: payment-service
+    environment:
+      MONGO_HOST: mongo
+      MONGO_PORT: "27017"
+      MONGO_DB: ${MONGO_DB:-bookstore}
+      HOST: 0.0.0.0
+      PORT: "3002"
+    ports:
+      - "${PAYMENT_PORT:-3002}:3002"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - bookstore-net
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3002/ping',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ---- API Gateway (point d'entree unique du front) - Express / node:16 ----
+  api-gateway:
+    build: ./api-gateway
+    image: archi-micro-services-exo2-gateway
+    container_name: api-gateway
+    environment:
+      PORT: "9001"
+      # Les microservices sont joints par leur nom de container (reseau commun)
+      INVENTORY_URL: http://inventory-service:3000
+      ORDER_URL: http://order-service:3001
+      PAYMENT_URL: http://payment-service:3002
+    ports:
+      - "${GATEWAY_PORT:-9001}:9001"
+    depends_on:
+      inventory-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+    networks:
+      - bookstore-net
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:9001/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ---- Front Express + EJS (parle uniquement a la gateway) - node:16 ----
   bookstore-web-app:
     build: ./bookstore-web-app
     image: archi-micro-services-exo2-front
     container_name: bookstore-web-app
     environment:
-      PORT: "8080"
-      # Le front joint le back par le NOM du container (reseau commun), pas par IP
-      BACKEND_URL: http://loopback-bookstore:3000
+      PORT: "8082"
+      GATEWAY_URL: http://api-gateway:9001
     ports:
-      - "8080:8080"
+      - "${FRONT_PORT:-8082}:8082"
     depends_on:
-      - loopback-bookstore
+      api-gateway:
+        condition: service_healthy
     networks:
       - bookstore-net
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8082/stylesheets/style.css',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
-# Reseau commun : permet d'utiliser les noms de containers a la place des IPs
+# Reseau Docker dedie : communication par nom de container
 networks:
   bookstore-net:
     driver: bridge

@@ -7,6 +7,8 @@ var logger = require('morgan');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var inventoryRouter = require('./routes/inventory');
+var ordersRouter = require('./routes/orders');
+var paymentsRouter = require('./routes/payments');
 
 var app = express();
 
@@ -20,8 +22,10 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// La page d'accueil affiche l'inventaire consomme depuis le microservice back
+// La page d'accueil affiche l'inventaire des livres (via l'API Gateway)
 app.use('/', inventoryRouter);
+app.use('/orders', ordersRouter);
+app.use('/payments', paymentsRouter);
 app.use('/home', indexRouter);
 app.use('/users', usersRouter);
 

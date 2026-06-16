@@ -1,6 +1,6 @@
 import {Entity, model, property} from '@loopback/repository';
 
-@model()
+@model({settings: {mongodb: {collection: 'books'}}})
 export class Book extends Entity {
   @property({
     type: 'string',
@@ -20,6 +20,16 @@ export class Book extends Entity {
     type: 'string',
   })
   author?: string;
+
+  @property({
+    type: 'number',
+  })
+  price?: number;
+
+  @property({
+    type: 'number',
+  })
+  stock?: number;
 
   constructor(data?: Partial<Book>) {
     super(data);

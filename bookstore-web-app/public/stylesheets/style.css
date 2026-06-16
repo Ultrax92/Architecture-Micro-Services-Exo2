@@ -8,6 +8,24 @@ a {
   margin-right: 10px;
 }
 
+nav {
+  margin-bottom: 25px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #eee;
+}
+
+nav a {
+  font-weight: bold;
+  margin-right: 20px;
+  text-decoration: none;
+}
+
+form input {
+  margin-right: 6px;
+  margin-bottom: 6px;
+  padding: 4px 6px;
+}
+
 table {
   border-collapse: collapse;
   margin-bottom: 30px;

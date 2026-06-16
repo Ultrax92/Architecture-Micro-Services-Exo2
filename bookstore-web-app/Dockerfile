@@ -13,10 +13,10 @@ RUN npm install
 COPY . .
 
 # Port d'ecoute du front (bin/www lit process.env.PORT)
-ENV PORT=8080
-# URL du microservice back via le nom du container sur le reseau commun
-ENV BACKEND_URL=http://loopback-bookstore:3000
+ENV PORT=8082
+# Le front ne communique qu'avec l'API Gateway (nom de container, reseau commun)
+ENV GATEWAY_URL=http://api-gateway:9001
 
-EXPOSE 8080
+EXPOSE 8082
 
 CMD ["npm", "start"]

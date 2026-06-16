@@ -18,9 +18,11 @@ yarn-error.log*
 logs/
 *.log
 
-# --- Env / secrets ---
-.env
-.env.*
+# --- Env local (overrides non versionnes) ---
+# Le .env (ports/DB, sans secret) est versionne pour la reproductibilite ;
+# seuls les overrides locaux sont ignores.
+.env.local
+.env.*.local
 
 # --- OS / IDE ---
 .DS_Store

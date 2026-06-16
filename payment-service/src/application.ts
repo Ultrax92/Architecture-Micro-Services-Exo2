@@ -11,7 +11,7 @@ import path from 'path';
 
 export {ApplicationConfig};
 
-export class LoopbackBookstoreApplication extends BootMixin(
+export class PaymentServiceApplication extends BootMixin(
   ServiceMixin(RepositoryMixin(RestApplication)),
 ) {
   constructor(options: ApplicationConfig = {}) {
@@ -30,7 +30,6 @@ export class LoopbackBookstoreApplication extends BootMixin(
     // Customize @loopback/boot Booter Conventions here
     this.bootOptions = {
       controllers: {
-        // Customize ControllerBooter Conventions here
         dirs: ['controllers'],
         extensions: ['.controller.js'],
         nested: true,

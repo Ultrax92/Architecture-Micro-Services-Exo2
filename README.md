@@ -1,79 +1,122 @@
-# Intégration d'un Front-End Express avec un Microservice LoopBack
+# BookStore — Architecture Microservices & Conteneurisation
 
-Application **bookstore** (front Express + EJS) connectée à un microservice **LoopBack 4**
-exposant une ressource `Book` reliée à **MongoDB**. L'ensemble est conteneurisé avec Docker.
+Évolution de l'application BookStore vers une **architecture microservices** complète,
+orchestrée avec Docker Compose. Le front-end ne communique qu'avec une **API Gateway**,
+qui route vers trois microservices LoopBack 4 partageant une instance MongoDB.
 
-## Fonctionnalités (CRUD complet via l'API LoopBack)
+## Architecture
 
-Le front consomme les endpoints REST du microservice :
+```
+                         ┌─────────────────────┐
+   navigateur ─────────► │  bookstore-web-app  │  (Express + EJS, port 8082)
+                         └──────────┬──────────┘
+                                    │  (uniquement vers la gateway)
+                         ┌──────────▼──────────┐
+                         │     api-gateway     │  (Express proxy, port 9001)
+                         └──┬───────┬───────┬──┘
+              /inventory/*  │       │ /orders/*   │ /payments/*
+                  ┌─────────▼──┐ ┌──▼─────────┐ ┌─▼──────────────┐
+                  │ inventory  │ │   order    │ │    payment     │
+                  │  service   │ │  service   │ │    service     │
+                  │ (LB4 :3000)│ │ (LB4 :3001)│ │  (LB4 :3002)   │
+                  └─────┬──────┘ └─────┬──────┘ └───────┬────────┘
+                        └──────────────┼────────────────┘
+                                ┌──────▼──────┐
+                                │    mongo    │  (instance unique, port 27017)
+                                │  collections: books / orders / payments
+                                └─────────────┘
+```
 
-| Action front (Express)        | Requête envoyée à l'API LoopBack | Opération   |
-| ----------------------------- | -------------------------------- | ----------- |
-| `GET /`                       | `GET /books`                     | Lister      |
-| `GET /book/:id`               | `GET /books/{id}`                | Consulter   |
-| `POST /add`                   | `POST /books`                    | Créer       |
-| `GET /edit/:id` + `POST /edit/:id` | `PATCH /books/{id}`         | Modifier    |
-| `POST /delete/:id`            | `DELETE /books/{id}`             | Supprimer   |
+| Service             | Rôle                                  | Image          | Port  | Collection |
+| ------------------- | ------------------------------------- | -------------- | ----- | ---------- |
+| `bookstore-web-app` | Front Express + EJS                   | `node:16`      | 8082  | —          |
+| `api-gateway`       | Point d'entrée unique (reverse proxy) | `node:16`      | 9001  | —          |
+| `inventory-service` | Catalogue des livres                  | `node:16-slim` | 3000  | `books`    |
+| `order-service`     | Commandes                             | `node:16-slim` | 3001  | `orders`   |
+| `payment-service`   | Paiements                             | `node:16-slim` | 3002  | `payments` |
+| `mongo`             | Base de données partagée              | `mongo:latest` | 27017 | —          |
 
-Après création / modification / suppression, l'utilisateur est redirigé vers la liste
-avec un **message de confirmation** (`?msg=created|updated|deleted`).
+### Routage de l'API Gateway
 
-## Architecture (microservices conteneurisés)
+Le front n'appelle **que** la gateway (`GATEWAY_URL=http://api-gateway:9001`) :
 
-| Service              | Rôle                                    | Image de base   | Port host |
-| -------------------- | --------------------------------------- | --------------- | --------- |
-| `mongo`              | Base de données                         | `mongo:latest`  | 27017     |
-| `loopback-bookstore` | Microservice back (API REST LoopBack 4) | `node:16-slim`  | 3000      |
-| `bookstore-web-app`  | Front Express + EJS (consomme l'API)    | `node:16`       | 8080      |
+| Appel front (gateway)      | Microservice cible        | Endpoint réel      |
+| -------------------------- | ------------------------- | ------------------ |
+| `/inventory/books[/...]`   | inventory-service (:3000) | `/books[/...]`     |
+| `/orders[/...]`            | order-service (:3001)     | `/orders[/...]`    |
+| `/payments[/...]`          | payment-service (:3002)   | `/payments[/...]`  |
 
-Les trois containers sont sur le même réseau Docker (`bookstore-net`), ce qui permet de se
-joindre par **nom de container** plutôt que par adresse IP :
+## Modèles (CRUD complet via Swagger sur chaque service)
 
-- le front appelle le back via `http://loopback-bookstore:3000` (`BACKEND_URL`)
-- le back se connecte à Mongo via l'hôte `mongo` (`MONGO_HOST`)
+- **Book** : `title`, `author`, `price`, `stock`
+- **Order** : `customerName`, `orderDate`, `totalAmount`, `status`
+- **Payment** : `orderId`, `amount`, `paymentDate`, `paymentMethod`, `status`
 
-Le nom du projet/stack Docker est `archi-micro-services-exo2`.
+## Démarrage
 
-## Lancer la stack
+Une seule commande lance toute la stack :
 
 ```bash
 docker compose up --build
 ```
 
+Le démarrage est ordonné via des **healthchecks** :
+`mongo` → microservices → `api-gateway` → front.
+
 ## URLs
 
-- Front bookstore (CRUD livres) : http://localhost:8080
-- API back (explorer Swagger)    : http://localhost:3000/explorer
-- API back (liste des livres)    : http://localhost:3000/books
+| Élément                         | URL                                   |
+| ------------------------------- | ------------------------------------- |
+| Front (livres / commandes / paiements) | http://localhost:8082          |
+| API Gateway (santé)             | http://localhost:9001/health          |
+| Inventory — Swagger             | http://localhost:3000/explorer        |
+| Order — Swagger                 | http://localhost:3001/explorer        |
+| Payment — Swagger               | http://localhost:3002/explorer        |
 
-## Arrêter
+Exemples via la gateway : `http://localhost:9001/inventory/books`,
+`http://localhost:9001/orders`, `http://localhost:9001/payments`.
+
+## Arrêt
 
 ```bash
-docker compose down          # stoppe et supprime les containers
-docker compose down -v       # + supprime le volume MongoDB (données)
+docker compose down        # stoppe et supprime les containers
+docker compose down -v     # + supprime le volume MongoDB (données)
 ```
+
+## Configuration (.env)
+
+Les ports et le nom de la base sont paramétrables dans [.env](.env) :
+
+```env
+MONGO_DB=bookstore
+INVENTORY_PORT=3000
+ORDER_PORT=3001
+PAYMENT_PORT=3002
+GATEWAY_PORT=9001
+FRONT_PORT=8082
+```
+
+## Points couverts (bonus inclus)
+
+- ✅ 3 microservices LoopBack 4 indépendants (model, datasource, repository, controllers, Swagger)
+- ✅ API Gateway comme point d'entrée unique
+- ✅ Front EJS : CRUD livres + commandes + paiements (via la gateway)
+- ✅ Dockerfile par service + `docker compose up`
+- ✅ Instance MongoDB unique partagée, **une collection par service**
+- ✅ Bonus : `.env`, réseau Docker dédié (`bookstore-net`), volume persistant (`mongo-data`),
+  healthchecks sur tous les services, documentation README
 
 ## Structure
 
 ```
 Exo2/
-├── docker-compose.yml              # orchestration des 3 services + réseau commun
-├── bookstore-web-app/              # front Express + EJS (node:16)
-│   ├── Dockerfile
-│   ├── routes/inventory.js         # CRUD : consomme l'API via node-fetch
-│   └── views/
-│       ├── inventory.ejs           # liste + formulaire d'ajout + actions
-│       ├── book.ejs                # page de consultation d'un livre
-│       └── edit.ejs                # formulaire de modification
-└── loopback-bookstore/             # back LoopBack 4 + MongoDB (node:16-slim)
-    ├── Dockerfile
-    └── src/
-        ├── models/book.model.ts            # Book (id ObjectId, title, author)
-        ├── datasources/lb-micro-book.datasource.ts
-        ├── repositories/book.repository.ts
-        └── controllers/books.controller.ts # CRUD /books (GET/POST/PUT/PATCH/DELETE)
+├── docker-compose.yml          # orchestration des 6 services
+├── .env                        # variables (ports, db)
+├── api-gateway/                # Express + http-proxy-middleware (node:16)
+├── bookstore-web-app/          # front Express + EJS (node:16)
+│   ├── routes/{inventory,orders,payments}.js
+│   └── views/{inventory,book,edit}.ejs, views/orders/*, views/payments/*
+├── inventory-service/          # LoopBack 4 — Book (node:16-slim)
+├── order-service/              # LoopBack 4 — Order (node:16-slim)
+└── payment-service/            # LoopBack 4 — Payment (node:16-slim)
 ```
-
-> Note : le modèle `Book` utilise un id `string` mappé sur l'`ObjectId` de MongoDB, ce qui
-> permet de cibler chaque livre par son id pour la consultation, la modification et la
-> suppression depuis le front.

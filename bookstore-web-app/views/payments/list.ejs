@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+  </head>
+  <body>
+    <nav>
+      <a href="/">Livres</a>
+      <a href="/orders">Commandes</a>
+      <a href="/payments">Paiements</a>
+    </nav>
+
+    <h1>Paiements</h1>
+
+    <% if (msg) { %>
+      <p class="flash">
+        <% if (msg === 'created') { %>Paiement cree avec succes.<% } %>
+        <% if (msg === 'updated') { %>Paiement modifie avec succes.<% } %>
+        <% if (msg === 'deleted') { %>Paiement supprime avec succes.<% } %>
+      </p>
+    <% } %>
+
+    <% if (payments.length === 0) { %>
+      <p>Aucun paiement pour le moment.</p>
+    <% } else { %>
+      <table>
+        <thead>
+          <tr><th>Order Id</th><th>Montant</th><th>Date</th><th>Methode</th><th>Statut</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          <% payments.forEach(function (payment) { %>
+            <tr>
+              <td><%= payment.orderId %></td>
+              <td><%= payment.amount %></td>
+              <td><%= payment.paymentDate %></td>
+              <td><%= payment.paymentMethod %></td>
+              <td><%= payment.status %></td>
+              <td>
+                <a href="/payments/<%= payment.id %>/edit">Modifier</a>
+                <form action="/payments/<%= payment.id %>/delete" method="post" class="inline"
+                      onsubmit="return confirm('Supprimer ce paiement ?');">
+                  <button type="submit" class="danger">Supprimer</button>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+
+    <h2>Creer un paiement</h2>
+    <form action="/payments/add" method="post">
+      <input type="text" name="orderId" placeholder="Order Id" required />
+      <input type="number" step="0.01" name="amount" placeholder="Montant" />
+      <input type="date" name="paymentDate" />
+      <input type="text" name="paymentMethod" placeholder="Methode (ex: card)" />
+      <input type="text" name="status" placeholder="Statut (ex: pending)" />
+      <button type="submit">Creer</button>
+    </form>
+  </body>
+</html>

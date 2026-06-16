@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+  </head>
+  <body>
+    <nav>
+      <a href="/">Livres</a>
+      <a href="/orders">Commandes</a>
+      <a href="/payments">Paiements</a>
+    </nav>
+
+    <h1>Modifier la commande</h1>
+
+    <form action="/orders/<%= order.id %>/edit" method="post">
+      <p><label>Nom du client :
+        <input type="text" name="customerName" value="<%= order.customerName %>" required /></label></p>
+      <p><label>Date :
+        <input type="date" name="orderDate" value="<%= order.orderDate == null ? '' : order.orderDate %>" /></label></p>
+      <p><label>Montant total :
+        <input type="number" step="0.01" name="totalAmount" value="<%= order.totalAmount == null ? '' : order.totalAmount %>" /></label></p>
+      <p><label>Statut :
+        <input type="text" name="status" value="<%= order.status == null ? '' : order.status %>" /></label></p>
+      <button type="submit">Enregistrer</button>
+      <a href="/orders">Annuler</a>
+    </form>
+  </body>
+</html>

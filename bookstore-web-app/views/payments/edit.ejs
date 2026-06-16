@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+  </head>
+  <body>
+    <nav>
+      <a href="/">Livres</a>
+      <a href="/orders">Commandes</a>
+      <a href="/payments">Paiements</a>
+    </nav>
+
+    <h1>Modifier le paiement</h1>
+
+    <form action="/payments/<%= payment.id %>/edit" method="post">
+      <p><label>Order Id :
+        <input type="text" name="orderId" value="<%= payment.orderId %>" required /></label></p>
+      <p><label>Montant :
+        <input type="number" step="0.01" name="amount" value="<%= payment.amount == null ? '' : payment.amount %>" /></label></p>
+      <p><label>Date :
+        <input type="date" name="paymentDate" value="<%= payment.paymentDate == null ? '' : payment.paymentDate %>" /></label></p>
+      <p><label>Methode :
+        <input type="text" name="paymentMethod" value="<%= payment.paymentMethod == null ? '' : payment.paymentMethod %>" /></label></p>
+      <p><label>Statut :
+        <input type="text" name="status" value="<%= payment.status == null ? '' : payment.status %>" /></label></p>
+      <button type="submit">Enregistrer</button>
+      <a href="/payments">Annuler</a>
+    </form>
+  </body>
+</html>
